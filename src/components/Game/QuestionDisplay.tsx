@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useGame } from '@/contexts/GameContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, ArrowRight, Flag, Image as ImageIcon, Lightbulb, LockKeyhole } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle2, Flag, Image as ImageIcon, Lightbulb, LockKeyhole } from 'lucide-react';
 import { toast } from "sonner";
 
 interface QuestionDisplayProps {
@@ -41,7 +41,9 @@ const QuestionDisplay = ({ onComplete }: QuestionDisplayProps) => {
   };
   
   const isLastQuestion = activeQuestion.id === 10;
-  const finalUnlocked = solvedQuestionIds.length >= 9;
+  const isSolved = solvedQuestionIds.includes(activeQuestion.id);
+  const solvedRegularCount = solvedQuestionIds.filter(id => id !== 10).length;
+  const finalUnlocked = solvedRegularCount >= 9;
   const canGoPrevious = currentQuestionIndex > 0;
   const canGoNext = currentQuestionIndex < questions.length - 1 && (currentQuestionIndex < 8 || finalUnlocked);
 
@@ -62,6 +64,11 @@ const QuestionDisplay = ({ onComplete }: QuestionDisplayProps) => {
               <span className="mt-1 block text-sm text-white/55">
                 Question {currentQuestionIndex + 1} <span className="text-white/25">/</span> 10
               </span>
+              {isSolved && (
+                <span className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-green-400/30 bg-green-400/10 px-2.5 py-1 text-xs font-semibold text-green-300">
+                  <CheckCircle2 size={14} /> Solved
+                </span>
+              )}
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2 rounded-full border border-game-gold/25 bg-game-gold/10 px-3 py-1.5 text-sm font-bold text-game-gold">
@@ -95,15 +102,17 @@ const QuestionDisplay = ({ onComplete }: QuestionDisplayProps) => {
           onChange={(e) => setAnswer(e.target.value)}
           aria-label="Your answer"
           className="h-14 border-white/15 bg-black/20 px-5 text-base text-white placeholder:text-white/35 focus-visible:border-game-primary focus-visible:ring-game-primary/40 md:text-lg"
-          disabled={isSubmitting}
+          disabled={isSubmitting || isSolved}
         />
 
         <Button
           type="submit"
           className="game-button group h-14 w-full rounded-xl text-base md:text-lg"
-          disabled={isSubmitting}
+          disabled={isSubmitting || isSolved}
         >
-          {isSubmitting ? (
+          {isSolved ? (
+            "Solved"
+          ) : isSubmitting ? (
             "Checking..."
           ) : isLastQuestion ? (
             <span className="flex items-center justify-center gap-2">
@@ -130,7 +139,7 @@ const QuestionDisplay = ({ onComplete }: QuestionDisplayProps) => {
           <ArrowLeft size={16} className="mr-2" /> Previous
         </Button>
         <span className="text-center text-xs text-white/45">
-          {solvedQuestionIds.length}/9 solved
+          {solvedRegularCount}/9 solved
         </span>
         {currentQuestionIndex === 8 && !finalUnlocked ? (
           <Button type="button" disabled className="border border-white/10 bg-white/5 text-white/45">

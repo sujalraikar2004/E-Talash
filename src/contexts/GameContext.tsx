@@ -318,6 +318,11 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
   const submitAnswer = (answer: string): boolean => {
     if (!activeQuestion || !socket) return false;
+
+    if (solvedQuestionIds.includes(activeQuestion.id)) {
+      toast.info('This question is already solved. Choose another question.');
+      return false;
+    }
     
     const isCorrect = answer.toLowerCase().trim() === activeQuestion.answer.toLowerCase().trim();
     
@@ -336,7 +341,13 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         socket.emit('completeGame', { roomCode });
         setIsGameActive(false);
       } else {
-        const nextIndex = questions.findIndex((question, index) => index > currentQuestionIndex && !nextSolvedIds.includes(question.id) && question.id !== FINAL_QUESTION_ID);
+        const unsolvedRegularIndexes = questions
+          .map((question, index) => ({ question, index }))
+          .filter(({ question }) => question.id !== FINAL_QUESTION_ID && !nextSolvedIds.includes(question.id))
+          .map(({ index }) => index);
+        const nextIndex = unsolvedRegularIndexes.find(index => index > currentQuestionIndex)
+          ?? unsolvedRegularIndexes[0]
+          ?? questions.findIndex(question => question.id === FINAL_QUESTION_ID);
         if (nextIndex >= 0) {
           setCurrentQuestionIndex(nextIndex);
           setActiveQuestion(questions[nextIndex]);
@@ -353,7 +364,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
   const selectQuestion = (index: number) => {
     const question = questions[index];
-    if (!question || (question.id === FINAL_QUESTION_ID && solvedQuestionIds.length < REGULAR_QUESTION_COUNT)) {
+    const solvedRegularCount = solvedQuestionIds.filter(id => id !== FINAL_QUESTION_ID).length;
+    if (!question || (question.id === FINAL_QUESTION_ID && solvedRegularCount < REGULAR_QUESTION_COUNT)) {
       toast.info('Solve all nine regular questions to unlock the final treasure');
       return;
     }
